@@ -41,36 +41,36 @@ $.fn.visualize = function(options, container){
 			var colors = o.colors;
 			var textColors = o.textColors;
 			var tableData = {
-				members: function(){
-					var members = [];
+				dataGroups: function(){
+					var dataGroups = [];
 					if(o.parseDirection == 'x'){
 						self.find('tr:gt(0)').each(function(i){
-							members[i] = {};
-							members[i].points = [];
-							members[i].color = colors[i];
-							if(textColors[i]){ members[i].textColor = textColors[i]; }
+							dataGroups[i] = {};
+							dataGroups[i].points = [];
+							dataGroups[i].color = colors[i];
+							if(textColors[i]){ dataGroups[i].textColor = textColors[i]; }
 							$(this).find('td').each(function(){
-								members[i].points.push($(this).text()*1);
+								dataGroups[i].points.push( parseInt($(this).text(),10) );
 							});
 						});
 					}
 					else {
 						var cols = self.find('tr:eq(1) td').size();
 						for(var i=0; i<cols; i++){
-							members[i] = {};
-							members[i].points = [];
-							members[i].color = colors[i];
-							if(textColors[i]){ members[i].textColor = textColors[i]; }
+							dataGroups[i] = {};
+							dataGroups[i].points = [];
+							dataGroups[i].color = colors[i];
+							if(textColors[i]){ dataGroups[i].textColor = textColors[i]; }
 							self.find('tr:gt(0)').each(function(){
-								members[i].points.push( $(this).find('td').eq(i).text()*1 );
+								dataGroups[i].points.push( $(this).find('td').eq(i).text()*1 );
 							});
 						};
 					}
-					return members;
+					return dataGroups;
 				},
 				allData: function(){
 					var allData = [];
-					$(this.members()).each(function(){
+					$(this.dataGroups()).each(function(){
 						allData.push(this.points);
 					});
 					return allData;
@@ -91,13 +91,21 @@ $.fn.visualize = function(options, container){
 						});
 						return topValue;
 				},
+				bottomValue: function(){
+						var bottomValue = 0;
+						var allData = this.allData().join(',').split(',');
+						$(allData).each(function(){
+							if(this<bottomValue) bottomValue = parseInt(this,10);
+						});
+						return bottomValue;
+				},
 				memberTotals: function(){
 					var memberTotals = [];
-					var members = this.members();
-					$(members).each(function(l){
+					var dataGroups = this.dataGroups();
+					$(dataGroups).each(function(l){
 						var count = 0;
-						$(members[l].points).each(function(m){
-							count +=members[l].points[m];
+						$(dataGroups[l].points).each(function(m){
+							count +=dataGroups[l].points[m];
 						});
 						memberTotals.push(count);
 					});
@@ -105,12 +113,12 @@ $.fn.visualize = function(options, container){
 				},
 				yTotals: function(){
 					var yTotals = [];
-					var members = this.members();
+					var dataGroups = this.dataGroups();
 					var loopLength = this.xLabels().length;
 					for(var i = 0; i<loopLength; i++){
 						yTotals[i] =[];
 						var thisTotal = 0;
-						$(members).each(function(l){
+						$(dataGroups).each(function(l){
 							yTotals[i].push(this.points[i]);
 						});
 						yTotals[i].join(',').split(',');
@@ -130,6 +138,9 @@ $.fn.visualize = function(options, container){
 						});
 						return topYtotal;
 				},
+				totalYRange: function(){
+					return this.topValue() + Math.abs(this.bottomValue());
+				},
 				xLabels: function(){
 					var xLabels = [];
 					if(o.parseDirection == 'x'){
@@ -137,7 +148,7 @@ $.fn.visualize = function(options, container){
 							xLabels.push($(this).html());
 						});
 					}
-					else{
+					else {
 						self.find('tr:gt(0) th').each(function(){
 							xLabels.push($(this).html());
 						});
@@ -147,13 +158,13 @@ $.fn.visualize = function(options, container){
 				yLabels: function(){
 					var yLabels = [];
 					var chartHeight = o.height;
-					var numLabels = chartHeight / 30;
-					var loopInterval = Math.round(this.topValue() / numLabels);
-	
-					for(var j=0; j<=numLabels; j++){
-						yLabels.push(j*loopInterval);
+					var numLabels = Math.round(chartHeight / 30);
+					//var totalRange = this.topValue() + Math.abs(this.bottomValue());
+					var loopInterval = Math.round(this.totalYRange() / Math.floor(numLabels)); //fix provided from lab
+					for(var j=this.bottomValue(); j<=topValue; j+=loopInterval){
+						yLabels.push(j); 
 					}
-					if(yLabels[numLabels] != this.topValue()) {
+					if(yLabels[yLabels.length-1] != this.topValue()) {
 						yLabels.pop();
 						yLabels.push(this.topValue());
 					}
@@ -184,7 +195,7 @@ $.fn.visualize = function(options, container){
 
 				//draw the pie pieces
 				$.each(memberTotals, function(i){
-					var fraction = this / dataSum;
+					var fraction = (this < 0)? 0 : this / dataSum;
 					ctx.beginPath();
 					ctx.moveTo(centerx, centery);
 					ctx.arc(centerx, centery, radius, 
@@ -193,7 +204,7 @@ $.fn.visualize = function(options, container){
 		                false);
 			        ctx.lineTo(centerx, centery);
 			        ctx.closePath();
-			        ctx.fillStyle = members[i].color;
+			        ctx.fillStyle = dataGroups[i].color;
 			        ctx.fill();
 			        // draw labels
 			       	var sliceMiddle = (counter + fraction/2);
@@ -214,7 +225,7 @@ $.fn.visualize = function(options, container){
 			        	.css('margin-'+leftRight, -labeltext.width()/2)
 			        	.css('margin-'+topBottom, -labeltext.outerHeight()/2);
 			        	
-			        if(members[i].textColor){ labeltext.css('color', members[i].textColor); }	
+			        if(dataGroups[i].textColor){ labeltext.css('color', dataGroups[i].textColor); }	
 			      	counter+=fraction;
 				});
 			},
@@ -245,7 +256,7 @@ $.fn.visualize = function(options, container){
 				});
 
 				//write Y labels
-				var yScale = canvas.height() / topValue;
+				var yScale = canvas.height() / totalYRange;
 				var liBottom = canvas.height() / (yLabels.length-1);
 				var ylabelsUL = $('<ul class="visualize-labels-y"></ul>')
 					.width(canvas.width())
@@ -267,9 +278,9 @@ $.fn.visualize = function(options, container){
 				});
 
 				//start from the bottom left
-				ctx.translate(0,canvas.height());
+				ctx.translate(0,zeroLoc);
 				//iterate and draw
-				$.each(members,function(h){
+				$.each(dataGroups,function(h){
 					ctx.beginPath();
 					ctx.lineWidth = o.lineWeight;
 					ctx.lineJoin = 'round';
@@ -320,7 +331,7 @@ $.fn.visualize = function(options, container){
 				});
 
 				//write Y labels
-				var yScale = canvas.height() / topValue;
+				var yScale = canvas.height() / totalYRange;
 				var liBottom = canvas.height() / (yLabels.length-1);
 				var ylabelsUL = $('<ul class="visualize-labels-y"></ul>')
 					.width(canvas.width())
@@ -341,14 +352,14 @@ $.fn.visualize = function(options, container){
 				});
 
 				//start from the bottom left
-				ctx.translate(0,canvas.height());
+				ctx.translate(0,zeroLoc);
 				//iterate and draw
-				for(var h=0; h<members.length; h++){
+				for(var h=0; h<dataGroups.length; h++){
 					ctx.beginPath();
-					var linewidth = (xInterval-o.barGroupMargin*2) / members.length; //removed +1 
+					var linewidth = (xInterval-o.barGroupMargin*2) / dataGroups.length; //removed +1 
 					var strokeWidth = linewidth - (o.barMargin*2);
 					ctx.lineWidth = strokeWidth;
-					var points = members[h].points;
+					var points = dataGroups[h].points;
 					var integer = 0;
 					for(var i=0; i<points.length; i++){
 						var xVal = (integer-o.barGroupMargin)+(h*linewidth)+linewidth/2;
@@ -358,7 +369,7 @@ $.fn.visualize = function(options, container){
 						ctx.lineTo(xVal, Math.round(-points[i]*yScale));
 						integer+=xInterval;
 					}
-					ctx.strokeStyle = members[h].color;
+					ctx.strokeStyle = dataGroups[h].color;
 					ctx.stroke();
 					ctx.closePath();
 				}
@@ -366,10 +377,13 @@ $.fn.visualize = function(options, container){
 		};
 	
 		//create new canvas, set w&h attrs (not inline styles)
-		var canvas = $('<canvas/>')
-			.attr('height',o.height)
-			.attr('width',o.width)
-			.css({width: o.width, height: o.height});
+		var canvasNode = document.createElement("canvas"); 
+		var canvas = $(canvasNode)
+			.attr({
+				'height': o.height,
+				'width': o.width
+			});
+			
 
 		
 		//create canvas wrapper div, set inline w&h, append
@@ -380,14 +394,21 @@ $.fn.visualize = function(options, container){
 		
 		//scrape table (this should be cleaned up into an obj)
 		var tableData = scrapeTable();
-		var members = tableData.members();
+		var dataGroups = tableData.dataGroups();
 		var allData = tableData.allData();
 		var dataSum = tableData.dataSum();
 		var topValue = tableData.topValue();
+		var bottomValue = tableData.bottomValue();
 		var memberTotals = tableData.memberTotals();
+		var totalYRange = tableData.totalYRange();
+
+
+		var zeroLoc = o.height * (topValue/totalYRange);
+	//	console.log(zeroLoc);
+		
 		var xLabels = tableData.xLabels();
 		var yLabels = tableData.yLabels();
-				
+								
 		//title/key container
 		if(o.appendTitle || o.appendKey){
 			var infoContain = $('<div class="visualize-info"></div>')
@@ -406,7 +427,7 @@ $.fn.visualize = function(options, container){
 			var newKey = $('<ul class="visualize-key"></ul>');
 			var selector = (o.parseDirection == 'x') ? 'tr:gt(0) th' : 'tr:eq(0) th' ;
 			self.find(selector).each(function(i){
-				$('<li><span class="visualize-key-color" style="background: '+members[i].color+'"></span><span class="visualize-key-label">'+ $(this).text() +'</span></li>')
+				$('<li><span class="visualize-key-color" style="background: '+dataGroups[i].color+'"></span><span class="visualize-key-label">'+ $(this).text() +'</span></li>')
 					.appendTo(newKey);
 			});
 			newKey.appendTo(infoContain);
@@ -415,7 +436,7 @@ $.fn.visualize = function(options, container){
 		//append new canvas to page
 		
 		if(!container){canvasContain.insertAfter(this); }
-		if($.browser.msie){ G_vmlCanvasManager.initElement(canvas[0]); }	
+		if( typeof(G_vmlCanvasManager) != 'undefined' ){ G_vmlCanvasManager.initElement(canvas[0]); }	
 		
 		//set up the drawing board	
 		var ctx = canvas[0].getContext('2d');
