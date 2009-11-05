@@ -414,11 +414,15 @@ $.fn.visualize = function(options, container){
 					var points = dataGroups[h].points;
 					var integer = 0;
 					for(var i=0; i<points.length; i++){
-						var xVal = (integer-o.barGroupMargin)+(h*linewidth)+linewidth/2;
-						xVal += o.barGroupMargin*2;
-						
-						ctx.moveTo(xVal, 0);
-						ctx.lineTo(xVal, Math.round(-points[i]*yScale));
+						// If the last value is zero, IE will go nuts and not draw anything,
+						// so don't try to draw zero values at all.
+						if (points[i] != 0) {
+							var xVal = (integer-o.barGroupMargin)+(h*linewidth)+linewidth/2;
+							xVal += o.barGroupMargin*2;
+
+							ctx.moveTo(xVal, 0);
+							ctx.lineTo(xVal, Math.round(-points[i]*yScale));
+                        }
 						integer+=barWidth;
 					}
 					ctx.strokeStyle = dataGroups[h].color;
