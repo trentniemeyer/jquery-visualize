@@ -397,6 +397,11 @@ $.fn.visualize = function(options, container){
 					ctx.translate(0, zeroLoc);
 				}
 
+				// Don't attempt to draw anything if all the values are zero,
+				// otherwise we will get weird exceptions from the canvas methods.
+				if (totalYRange <= 0)
+					return;
+
 				var yScale = (horizontal ? canvas.width() : canvas.height()) / totalYRange;
 				var barWidth = horizontal ? (canvas.height() / xLabels.length) : (canvas.width() / (bottomLabels.length));
 				var linewidth = (barWidth - o.barGroupMargin*2) / dataGroups.length;
