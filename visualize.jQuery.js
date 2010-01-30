@@ -26,12 +26,13 @@ $.fn.visualize = function(options, container){
 			pieLabelPos: 'inside',
 			lineWeight: 4, //for line and area - stroke weight
 			barGroupMargin: 10,
-			barMargin: 1 //space around bars in bar chart (added to both sides of bar)
+			barMargin: 1, //space around bars in bar chart (added to both sides of bar)
+			yLabelInterval: 30 //distance between y labels
 		},options);
 		
 		//reset width, height to numbers
-		o.width = parseInt(o.width,10);
-		o.height = parseInt(o.height,10);
+		o.width = parseFloat(o.width);
+		o.height = parseFloat(o.height);
 		
 		
 		var self = $(this);
@@ -50,7 +51,7 @@ $.fn.visualize = function(options, container){
 							dataGroups[i].color = colors[i];
 							if(textColors[i]){ dataGroups[i].textColor = textColors[i]; }
 							$(this).find('td').each(function(){
-								dataGroups[i].points.push( parseInt($(this).text(),10) );
+								dataGroups[i].points.push( parseFloat($(this).text()) );
 							});
 						});
 					}
@@ -79,7 +80,7 @@ $.fn.visualize = function(options, container){
 					var dataSum = 0;
 					var allData = this.allData().join(',').split(',');
 					$(allData).each(function(){
-						dataSum += parseInt(this,10);
+						dataSum += parseFloat(this);
 					});
 					return dataSum
 				},	
@@ -87,7 +88,7 @@ $.fn.visualize = function(options, container){
 						var topValue = 0;
 						var allData = this.allData().join(',').split(',');
 						$(allData).each(function(){
-							if(parseInt(this,10)>topValue) topValue = parseInt(this,10);
+							if(parseFloat(this,10)>topValue) topValue = parseFloat(this);
 						});
 						return topValue;
 				},
@@ -95,7 +96,7 @@ $.fn.visualize = function(options, container){
 						var bottomValue = this.topValue();
 						var allData = this.allData().join(',').split(',');
 						$(allData).each(function(){
-							if(this<bottomValue) bottomValue = parseInt(this,10);
+							if(this<bottomValue) bottomValue = parseFloat(this);
 						});
 						return bottomValue;
 				},
@@ -123,7 +124,7 @@ $.fn.visualize = function(options, container){
 						});
 						yTotals[i].join(',').split(',');
 						$(yTotals[i]).each(function(){
-							thisTotal += parseInt(this);
+							thisTotal += parseFloat(this);
 						});
 						yTotals[i] = thisTotal;
 						
@@ -134,7 +135,7 @@ $.fn.visualize = function(options, container){
 					var topYtotal = 0;
 						var yTotals = this.yTotals().join(',').split(',');
 						$(yTotals).each(function(){
-							if(parseInt(this,10)>topYtotal) topYtotal = parseInt(this,10);
+							if(parseFloat(this,10)>topYtotal) topYtotal = parseFloat(this);
 						});
 						return topYtotal;
 				},
@@ -181,8 +182,7 @@ $.fn.visualize = function(options, container){
 		var createChart = {
 			pie: function(){	
 				
-				canvasContain
-					.addClass('visualize-pie');
+				canvasContain.addClass('visualize-pie');
 				
 				if(o.pieLabelPos == 'outside'){ canvasContain.addClass('visualize-pie-outside'); }	
 						
@@ -196,7 +196,7 @@ $.fn.visualize = function(options, container){
 
 				//draw the pie pieces
 				$.each(memberTotals, function(i){
-					var fraction = (this < 0)? 0 : this / dataSum;
+					var fraction = (this <= 0 || isNaN(this))? 0 : this / dataSum;
 					ctx.beginPath();
 					ctx.moveTo(centerx, centery);
 					ctx.arc(centerx, centery, radius, 
@@ -469,14 +469,15 @@ $.fn.visualize = function(options, container){
 				'width': o.width
 			});
 			
-
+		//get title for chart
+		var title = o.title || self.find('caption').text();
 		
 		//create canvas wrapper div, set inline w&h, append
-		var canvasContain = (container || $('<div class="visualize" role="presentation" />'))
+		var canvasContain = (container || $('<div class="visualize" role="img" aria-label="Chart representing data from the table: '+ title +'" />'))
 			.height(o.height)
 			.width(o.width)
 			.append(canvas);
-		
+
 		//scrape table (this should be cleaned up into an obj)
 		var tableData = scrapeTable();
 		var dataGroups = tableData.dataGroups();
@@ -486,11 +487,7 @@ $.fn.visualize = function(options, container){
 		var bottomValue = tableData.bottomValue();
 		var memberTotals = tableData.memberTotals();
 		var totalYRange = tableData.totalYRange();
-
-
 		var zeroLoc = o.height * (topValue/totalYRange);
-	//	console.log(zeroLoc);
-		
 		var xLabels = tableData.xLabels();
 		var yLabels = tableData.yLabels();
 								
@@ -502,9 +499,7 @@ $.fn.visualize = function(options, container){
 		
 		//append title
 		if(o.appendTitle){
-			var title = o.title || self.find('caption').text();
-			$('<div class="visualize-title">'+ title +'</div>')
-				.appendTo(infoContain);
+			$('<div class="visualize-title">'+ title +'</div>').appendTo(infoContain);
 		}
 		
 		//append key
