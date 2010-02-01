@@ -196,7 +196,9 @@ $.fn.visualize = function(options, container){
 
 				//draw the pie pieces
 				$.each(memberTotals, function(i){
-					var fraction = (this <= 0 || isNaN(this))? 0 : this / dataSum;
+					var fraction = this / dataSum;
+                    if (fraction <= 0 || isNaN(fraction))
+                        return;
 					ctx.beginPath();
 					ctx.moveTo(centerx, centery);
 					ctx.arc(centerx, centery, radius, 
