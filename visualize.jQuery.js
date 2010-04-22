@@ -142,7 +142,7 @@ $.fn.visualize = function(options, container){
 						return topYtotal;
 				},
 				totalYRange: function(){
-					return this.topValue() + Math.abs(this.bottomValue());
+					return this.topValue() - this.bottomValue();
 				},
 				xLabels: function(){
 					var xLabels = [];
