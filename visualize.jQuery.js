@@ -25,6 +25,8 @@ $.fn.visualize = function(options, container){
 			pieMargin: 20, //pie charts only - spacing around pie
 			pieLabelPos: 'inside',
 			lineWeight: 4, //for line and area - stroke weight
+			lineDots: 'double', //also available: 'single', false
+			dotInnerColor: "#ffffff", // only used for lineDots:'double'
 			barGroupMargin: 10,
 			barMargin: 1, //space around bars in bar chart (added to both sides of bar)
 			yLabelInterval: 30 //distance between y labels
@@ -280,6 +282,25 @@ $.fn.visualize = function(options, container){
 						.addClass('label');
 				});
 
+				var drawPoint = function (x,y,color,size) {
+					ctx.moveTo(x,y);
+					ctx.beginPath();
+					ctx.arc(x,y,size/2,0,2*Math.PI,false);
+					ctx.closePath();
+					ctx.fillStyle = color;
+					ctx.fill();
+				}
+				var pointQueue = [];
+				var keyPoint = function(x,y,color) {
+					var size = o.lineWeight*Math.PI;
+					pointQueue.push(function() {
+						drawPoint(x,y,color,size);
+						if(o.lineDots === 'double') {
+							drawPoint(x,y,o.dotInnerColor,size-o.lineWeight*Math.PI/2);
+						}
+					});
+				};
+
 				//start from the bottom left
 				ctx.translate(0,zeroLoc);
 				//iterate and draw
@@ -289,23 +310,31 @@ $.fn.visualize = function(options, container){
 					ctx.lineJoin = 'round';
 					var points = this.points;
 					var integer = 0;
+					var color = this.color;
 					ctx.moveTo(0,-(points[0]*yScale));
+					keyPoint(0,-(points[0]*yScale),color);
 					$.each(points, function(){
+						if(o.lineDots) {
+							keyPoint(integer,-(this*yScale),color);
+						}
 						ctx.lineTo(integer,-(this*yScale));
 						integer+=xInterval;
 					});
-					ctx.strokeStyle = this.color;
+					ctx.strokeStyle = color;
 					ctx.stroke();
 					if(area){
 						ctx.lineTo(integer,0);
 						ctx.lineTo(0,0);
 						ctx.closePath();
-						ctx.fillStyle = this.color;
+						ctx.fillStyle = color;
 						ctx.globalAlpha = .3;
 						ctx.fill();
 						ctx.globalAlpha = 1.0;
 					}
 					else {ctx.closePath();}
+					$.each(pointQueue,function(){
+						pointQueue.shift().call();
+					});
 				});
 			},
 			
