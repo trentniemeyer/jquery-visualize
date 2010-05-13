@@ -28,7 +28,7 @@ $.fn.visualize = function(options, container){
 			pieLabelsAsPercent: true,
 			pieLabelPos: 'inside',
 			lineWeight: 4, //for line and area - stroke weight
-			lineDots: options.type == 'line' ? 'double' : false, //also available: 'single', false
+			lineDots: ( options && options.type == 'line' ) ? 'double' : false, //also available: 'single', false
 			dotInnerColor: "#ffffff", // only used for lineDots:'double'
 			barGroupMargin: 10,
 			barMargin: 1, //space around bars in bar chart (added to both sides of bar)
