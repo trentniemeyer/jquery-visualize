@@ -223,7 +223,7 @@ $.fn.visualize = function(options, container){
 			        var topBottom = (labely > centery) ? 'bottom' : 'top';
 			        var percentage = parseFloat((fraction*100).toFixed(2));
 
-			        if(percentage){
+			        if (!isNaN(parseFloat(percentage)) && isFinite(percentage)) {
 			        	var labelval = (o.pieLabelsAsPercent) ? percentage + '%' : this;
 				        var labeltext = $('<span class="visualize-label">' + labelval +'</span>')
 				        	.css(leftRight, 0)
